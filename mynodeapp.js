@@ -1,21 +1,21 @@
-var express = require('express');
-var bodyParser = require('body-parser');
+var express     = require('express');
+var bodyParser  = require('body-parser');
 var MongoClient = require('mongodb').MongoClient;
-var ObjectId = require('mongodb').ObjectID;
-var Promises = require('promises');
-//var Mustache = require('mustache');
-var fetch = require('node-fetch');
+//var ObjectId    = require('mongodb').ObjectID;
+var Promises    = require('promises');
+var fetch       = require('node-fetch');
+var app         = express();
+var server      = require('http').createServer(app);
+var u           = require('util'); // Для дебага
+var db          = {};
 
-var u = require('util');
 
-var app = express();
-var server = require('http').createServer(app);
-
-var db;
 
 function taskGen(template, data) {
   console.log( "New execute taskGen" );
-  var result = new Object();    // Результат запросов в БД
+  var result = {};                    // Результат запросов в БД
+  
+  
   
   // Не использовать вложенный код говорите
   // Больше вложенностей богу промисей
@@ -108,8 +108,8 @@ function taskGen(template, data) {
 }
 
 
-app.use(express.static('static'));
-app.use(bodyParser.json());
+//app.use(express.static('static'));
+//app.use(bodyParser.json());
 
 // Добавляет таск сразу в базу
 app.post('/api/tasks', function(req, res) {
