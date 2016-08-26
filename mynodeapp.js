@@ -3,7 +3,7 @@ var bodyParser = require('body-parser');
 var MongoClient = require('mongodb').MongoClient;
 var ObjectId = require('mongodb').ObjectID;
 var Promises = require('promises');
-var Mustache = require('mustache');
+//var Mustache = require('mustache');
 var fetch = require('node-fetch');
 
 var u = require('util');
@@ -26,48 +26,52 @@ function taskGen(template, data) {
       if( err != undefined ) { reject( 'database error' ); }
       if( item == null )     { reject( 'template ' + template + ' not found' ); }
       console.log("Template %s found", template );
-      result.template = item;     // Заносим результат в обьект
-	  delete result.template['_id']; // Удаляем ID шаблона из шаблона так как в таске у нас не должно быть ID
-      resolve(result);            // Возвращаем обьект
+      result.template = item;         // Заносим результат в обьект
+      delete result.template['_id'];  // Удаляем ID шаблона из шаблона так как в таске у нас не должно быть ID
+      resolve(result);                // Возвращаем обьект
     });
-  })
-  promise.then( result => {            // Если все успешно в первом запросе
+  });
+  
+  promise.then( result => {          // Если все успешно в первом запросе
     return new Promise( ( resolve, reject ) => {
       // Найти данные по _id в коллекции _channels
       console.log('Search channel by ID', data );
       db.collection("_channels").findOne( {"_id": data}, function( err, item ) {
         if( err != undefined ) { reject( 'database error' ); }
-        if( item == null ) { reject( 'ID ' + data + ' not found' ); } 
-        console.log( "TODO: (%s == null) == FALSE", item ); // TODO: null != null !!!!!!!!!!!!!!!!!!!!!!
-        console.log("Channel ID %s found", item._id );
-        result.channel = item;     // Заносим результат в обьект
-        resolve(result);           // Возвращаем обьект
+        if( item == null ) {
+          reject( 'ID ' + data + ' not found' ); 
+        } else {
+          console.log("Channel with ID %s found", item._id );
+          result.channel = item;     // Заносим результат в обьект
+          resolve(result);           // Возвращаем обьект
+        }
       });
     });
   }, error => {                    // Если в первом запросе произошла ошибка
     console.error("Search template error: %s", error );
   }).then( result => {             // Если все успешно во втором запросе
 
-	// Сгенерировать таск
-	console.log('Generate new task');
-	var genPort = 42000 + parseInt(result.channel.code) +
+  // Сгенерировать таск
+  console.log('Generate new task');
+  var genPort = 42000 + parseInt(result.channel.code) +
                           parseInt(result.channel.resolution); // Генерация genPort по указанной методе.
-	var channel = result.channel;
-	var $tpl = JSON.stringify( result.template );			   // Превращаем наш шаблон в строку
-	$tpl = $tpl.replace( /\'/g, "\'" );						   // Заменяем все ' на \' если вдруг будет кавычка в шаблоне
-	$tpl = 'var newTask = JSON.parse(\'' + $tpl + '\');';      // Добавляем определение переменной и чтобы сразу парсилось в JSON
-	$tpl = $tpl.replace(/{{(.*?)}}/gim, "' + $1 + '");         // Заменяем {{var}} на ' + var + '
-	eval( $tpl );                                              // Исполняем получившийся код
-	console.log( newTask );
+
+  var channel = result.channel;                         // Делаем обьект channel в области видимости в соответсвии с шаблоном
+  var $tpl = JSON.stringify( result.template );         // Превращаем наш шаблон в строку
+  $tpl = $tpl.replace( /\'/g, "\'" );                   // Заменяем все ' на \' если вдруг будет кавычка в шаблоне
+  $tpl = 'var newTask = JSON.parse(\'' + $tpl + '\');'; // Добавляем определение переменной и чтобы сразу парсилось в JSON
+  $tpl = $tpl.replace(/{{(.*?)}}/gim, "' + $1 + '");    // Заменяем {{var}} на ' + var + '
+  eval( $tpl );                                         // Исполняем получившийся код
+  console.log( newTask );
 
     /* Подготавливаем данные для генерации (Узнаем ExposePorts)
-	var rdata  = new Object();
+  var rdata  = new Object();
     rdata.genPort = 42000 + parseInt(result.channel.code) +
                             parseInt(result.channel.resolution); // Генерация genPort по указанной методе.
     rdata.channel = result.channel;
-	var newTask = JSON.parse( Mustache.render( JSON.stringify( result.template ), rdata ) );*/
-	
-	
+  var newTask = JSON.parse( Mustache.render( JSON.stringify( result.template ), rdata ) );*/
+  
+  
         
     // Постим таск через Rest API с помощью нового метода fetch
     console.log('Trying send task via REST API');
@@ -133,7 +137,7 @@ app.post('/api/tasks', function(req, res) {
 app.get('/test', function(req, res) {
     res.send('');
     var template    = 'true-grabber';
-    var data        = '57bc7a5fdc80371b3c54702c';
+    var data        = '257bc7a5fdc80371b3c54702c';
     taskGen(template, data);
 });
 
